@@ -17,7 +17,8 @@ func main() {
 	defer db.CloseDB()
 
 	// ルーティング設定
-	http.HandleFunc("/todos", handlers.TodosHandler)
+	http.HandleFunc("/todos", handlers.TodosHandler)     // GET, POST
+	http.HandleFunc("/todos/", handlers.TodoByIDHandler) // GET(id), PUT, PATCH, DELETE
 
 	fmt.Println("🌐 Server started at http://localhost:8080")
 	http.ListenAndServe(":8080", nil)
