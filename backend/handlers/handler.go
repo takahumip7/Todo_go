@@ -74,7 +74,12 @@ func createTodo(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	writeJSON(w, t)
+	newTodo, err := models.GetTodoByID(t.ID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, newTodo)
 }
 
 // PUT /todos/{id}（全体更新）
