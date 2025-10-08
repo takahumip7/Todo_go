@@ -16,21 +16,26 @@ func main() {
 	}
 	defer db.CloseDB()
 
-	// ルーティング設定
-	http.HandleFunc("/todos", handlers.TodosHandler)     // GET, POST
-	http.HandleFunc("/todos/", handlers.TodoByIDHandler) // GET(id), PUT, PATCH, DELETE
-
 	// CORS対応ラッパー
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		if r.Method == "OPTIONS" {
-			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "*")
-			w.WriteHeader(http.StatusNoContent)
+		// ✅ 必須ヘッダーを毎回セット
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+		// ✅ Preflight対応
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
 			return
 		}
+
+		// ルーティング
 		http.DefaultServeMux.ServeHTTP(w, r)
 	})
+
+	// ハンドラ登録
+	http.HandleFunc("/todos", handlers.TodosHandler)     // GET, POST
+	http.HandleFunc("/todos/", handlers.TodoByIDHandler) // GET(id), PUT, PATCH, DELETE
 
 	fmt.Println("🌐 Server started at http://localhost:8080")
 	http.ListenAndServe(":8080", handler)

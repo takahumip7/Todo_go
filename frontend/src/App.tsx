@@ -78,6 +78,27 @@ function App() {
     }
   };
 
+    // PATCH(status更新)
+  const toggleTodoStatus = async (todo: Todo) => {
+    const newCompleted = todo.status === TodoStatus.未着手; //反転
+
+    const res = await fetch(`http://localhost:8080/todos/${todo.id}`, {
+      method: "PATCH",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ completed: newCompleted}),
+    });
+
+    if (res.ok) {
+      // 成功時にフロント側stateを更新
+      setTodos(
+        todos.map((t) => t.id === todo.id ? { ...t, status: newCompleted ? TodoStatus.完了 : TodoStatus.未着手}: t)
+      );
+    } else {
+      const errText = await res.text();
+      alert("更新に失敗しました。：" + errText);
+    }
+  };
+
 
   return (
     <div style={{ maxWidth: "600px", margin: "0 auto", padding: "16px" }}>
@@ -143,6 +164,10 @@ function App() {
               <span style={{ fontWeight: "bold" }}>
                 {statusLabels[todo.status]}
               </span>
+              {/* ✅ 状態切り替えボタン */}
+              <button onClick={() => toggleTodoStatus(todo)} style={{padding: "4px 8px", backgroundColor: "#2196F3", color: "white", border: "none", borderRadius: "6px", cursor: "pointer"}}>
+                {todo.status === TodoStatus.未着手 ? "完了にする" : "未着手に戻す"}
+              </button>
               {/* 🗑 削除ボタン */}
               <button onClick={() => deleteTodo(todo.id)} 
                 style={{ padding: "4px 8px", backgroundColor: "#f44336", color: "white", border: "none", borderRadius: "6px", cursor: "pointer"}}>
