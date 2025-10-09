@@ -1,3 +1,4 @@
+import { title } from 'process';
 import {useEffect, useState} from 'react';
 
 // ステータスをフロント側（enum）で管理
@@ -21,6 +22,8 @@ const mapCompletedToStatus = (completed: boolean): TodoStatus => {
 function App() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [newTitle, setNewTitle] = useState(""); // 入力フォーム用
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
 
   const statusLabels = ['未着手', '完了'];
   const statusColors = ['#ffe5e5', '#d1ffd6'];
@@ -78,7 +81,7 @@ function App() {
     }
   };
 
-    // PATCH(status更新)
+  // PATCH(status更新)
   const toggleTodoStatus = async (todo: Todo) => {
     const newCompleted = todo.status === TodoStatus.未着手; //反転
 
@@ -98,6 +101,43 @@ function App() {
       alert("更新に失敗しました。：" + errText);
     }
   };
+
+  // 編集開始
+  const startEditing = (id: number, currentTitle: string) => {
+    setEditingId(id);
+    setEditingTitle(currentTitle);
+  }
+
+  // 編集終了
+  const cacelEditing = () => {
+    setEditingId(null);
+    setEditingTitle('');
+  }
+
+  // PUT(更新)
+  const updateTodo = async (id: number) => {
+    if(!editingTitle.trim()) return;
+
+    try {
+      const res = await fetch(`http://localhost:8080/todos/${id}`, {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ title: editingTitle}),
+      });
+
+      if (res.ok) {
+        setTodos(prev =>
+          prev.map(todo =>
+            todo.id === id ? { ...todo, title: editingTitle } :todo
+          )
+        );
+        setEditingId(null);
+        setEditingTitle('');
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
 
 
   return (
@@ -156,9 +196,35 @@ function App() {
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
             }}
           >
-            <div>
-              {todo.title} <br />
-              <small>{new Date(todo.created_at).toLocaleString()}</small>
+            <div style={{ flex: 1 }}>
+              {editingId === todo.id ? (
+                //編集モード
+                <div style={{ display: "flex", gap: "8px", alignItems: "center"}}>
+                  <input 
+                    type="text"
+                    value={editingTitle}
+                    onChange={(e) => setEditingTitle(e.target.value)}
+                    style={{
+                      flex: 1,
+                      padding: "4px 8px",
+                      border: "1px solid #ccc",
+                      borderRadius: "6px"
+                    }}
+                  />
+                  <button onClick={() => updateTodo(todo.id)} style={{margin: "4px 8px", backgroundColor: "#4CAF50", color: "white", border: "none", borderRadius: "6px", cursor: "pointer"}}>
+                    保存
+                  </button>
+                  <button onClick={() => cacelEditing()} style={{margin: "4px 8px", backgroundColor: "#ccc", color: "white", border: "none", borderRadius: "6px", cursor: "pointer"}}>
+                    キャンセル
+                  </button>
+                </div>
+              ) : (
+                //通常表示
+                <>
+                  {todo.title} <br />
+                  <small>{new Date(todo.created_at).toLocaleString()}</small>
+                </>
+              )}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px"}}>
               <span style={{ fontWeight: "bold" }}>
@@ -168,6 +234,13 @@ function App() {
               <button onClick={() => toggleTodoStatus(todo)} style={{padding: "4px 8px", backgroundColor: "#2196F3", color: "white", border: "none", borderRadius: "6px", cursor: "pointer"}}>
                 {todo.status === TodoStatus.未着手 ? "完了にする" : "未着手に戻す"}
               </button>
+              {/* 編集ボタン */}
+              {editingId !== todo.id && todo.status === TodoStatus.未着手 && (
+                <button onClick={() => startEditing(todo.id, todo.title)} 
+                  style={{ padding: "4px 8px", backgroundColor: "#FFA500", color: "white", border: "none", borderRadius: "6px", cursor: "pointer"}}>
+                  編集
+                </button>
+              )}
               {/* 🗑 削除ボタン */}
               <button onClick={() => deleteTodo(todo.id)} 
                 style={{ padding: "4px 8px", backgroundColor: "#f44336", color: "white", border: "none", borderRadius: "6px", cursor: "pointer"}}>
